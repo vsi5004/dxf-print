@@ -29,7 +29,7 @@ export class PreviewRenderer {
         `${first.x - pad} ${-first.y - pad} ${sx + 2 * pad} ${sy + 2 * pad}`,
       );
       const font = Math.min(l.usableWidth, l.usableHeight) * 0.075;
-      content += `<g transform="scale(1,-1)" fill="none" stroke="#d7e3f2" stroke-width="${l.settings.lineWidth}" vector-effect="non-scaling-stroke">${shapes.map((s) => `<path d="${svgPath(s)}"/>`).join('')}</g>`;
+      content += `<g transform="scale(1,-1)" fill="none" stroke="#d7e3f2">${shapes.map((s) => `<path d="${svgPath(s)}" stroke-width="1.2" vector-effect="non-scaling-stroke"/>`).join('')}</g>`;
       content += l.allTiles
         .map((t) => {
           const i = l.tiles.indexOf(t),
