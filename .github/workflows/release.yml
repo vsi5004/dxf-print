@@ -1,0 +1,42 @@
+name: Publish distribution
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+permissions:
+  contents: write
+  actions: read
+concurrency:
+  group: publish-distribution
+  cancel-in-progress: false
+jobs:
+  publish:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dxf-print-dist
+          path: dist
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+      - name: Package tested static files
+        env:
+          SOURCE_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          printf '{"commit":"%s"}\n' "$SOURCE_SHA" > dist/version.json
+          (cd dist && zip -qr ../dxf-print-dist.zip .)
+          sha256sum dxf-print-dist.zip > SHA256SUMS
+      - name: Publish immutable build distribution
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          SOURCE_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          tag="build-$SOURCE_SHA"
+          if ! gh release view "$tag" >/dev/null 2>&1; then
+            gh release create "$tag" dxf-print-dist.zip SHA256SUMS --target "$SOURCE_SHA" --title "Tested build ${SOURCE_SHA:0:7}" --notes 'Static distribution produced only after all CI checks passed. Includes a checksum and source version.' --latest
+          fi

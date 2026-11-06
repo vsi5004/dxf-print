@@ -2,17 +2,25 @@
 
 Target: `https://ivansbuilds.com/tools/dxf-print/`.
 
-## Separate repositories
+## Current hosting arrangement
 
-This repository owns source, tests, CI, build artifacts, and deployment. The portfolio keeps only a link and a deploy exclusion; it does not import or build the tool. Deploying one project must not delete the other.
+The tool repository owns source, CI, production artifacts and automated build releases. A separate `Deploy DXF tool` workflow in the portfolio/hosting repository downloads the latest successful distribution, verifies its checksum, and syncs only the tool subdirectory using the existing SiteGround secrets. It does not build the portfolio or execute downloaded application code.
 
-In the portfolio's `.github/workflows/deploy.yml`, preserve the tool directory with:
+The hosting workflow checks every 15 minutes and also supports manual dispatch. GitHub can delay scheduled runs. It compares the deployed `version.json` with the release commit and exits without deploying when unchanged.
+
+This arrangement keeps hosting credentials in their existing repository. No key needs to be copied to the public tool repository or recovered in plaintext. Build releases are published only from successful main-branch push CI runs, with source commit and SHA-256 checksum. Pull-request runs cannot publish distributions.
+
+The portfolio deployment must preserve the tool directory:
 
 ```yaml
 EXCLUDE: '.git/, .github/, tools/dxf-print/'
 ```
 
-The existing portfolio rsync uses `--delete`, so this exclusion is required **before** enabling the tool's production deployment. Do not add `--delete-excluded` to either project.
+Both changes are in the portfolio integration pull request. The hosting workflow pins the SSH action to a reviewed commit and uses SSH's initial host enrollment (`accept-new`), matching the existing hosting account. For stronger host identity pinning, provision a verified known_hosts entry as described below.
+
+## Alternative: direct deployment from this repository
+
+A direct SiteGround workflow is also provided but disabled by default. Use this option if hosting credentials are deliberately provisioned in this repository in the future. Disable the hosting-repository poller before switching so only one deployment path is active.
 
 ## Repository setup
 
