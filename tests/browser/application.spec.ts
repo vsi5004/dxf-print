@@ -8,6 +8,8 @@ test('example, reciprocal seam details, numeric IDs, and vector PDF download', a
   await expect(page.getByRole('button', { name: 'Download tiled PDF' })).toBeDisabled();
   await page.getByRole('button', { name: 'Try an example' }).click();
   await expect(page.locator('#stat-sheets')).toContainText('12');
+  await expect(page.locator('#preview')).toBeVisible();
+  await expect(page.locator('#preview path').first()).toBeVisible();
   await expect(page.locator('#neighbors')).toContainText('A1:B1');
   await page.selectOption('#sheet-select', '1');
   await expect(page.locator('#neighbors')).toContainText('A1:B1');

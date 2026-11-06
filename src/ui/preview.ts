@@ -15,7 +15,7 @@ export class PreviewRenderer {
       tile = l.tiles[selected],
       m = contentMargin(l.settings);
     el('empty').hidden = true;
-    el('preview').hidden = false;
+    el('preview').toggleAttribute('hidden', false);
     el('sheet-details').hidden = false;
     const svg = el<SVGElement & HTMLElement>('preview');
     let content = '';

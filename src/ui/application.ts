@@ -92,7 +92,7 @@ export class Application {
       this.layout = null;
       this.shapes = [];
       el('empty').hidden = false;
-      el('preview').hidden = true;
+      el('preview').toggleAttribute('hidden', true);
       el('sheet-details').hidden = true;
       el('stat-size').textContent = '—';
       el('stat-sheets').textContent = '—';
@@ -149,7 +149,7 @@ export class Application {
       this.renderPreview();
     } catch (error) {
       this.layout = null;
-      el('preview').hidden = true;
+      el('preview').toggleAttribute('hidden', true);
       el('empty').hidden = false;
       el('sheet-details').hidden = true;
       el('stat-size').textContent = '—';
