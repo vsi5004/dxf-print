@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Turn a 2D DXF into full-scale printable PDF sheets with matching seam labels, trim guides, and an assembly map. Files stay on your device."
+    />
+    <meta name="theme-color" content="#0d1117" />
+    <title>DXF Print — full-scale paper templates</title>
+  </head>
+  <body>
+    <header>
+      <a class="brand" href="https://ivansbuilds.com"
+        >IVAN<span>BUILDS</span><small>/ TOOLS</small></a
+      ><a class="back" href="https://ivansbuilds.com">Back to portfolio ↗</a>
+    </header>
+    <main>
+      <div class="intro">
+        <div>
+          <p class="eyebrow">DXF PRINT</p>
+          <h1>Tile DXF files for printing</h1>
+          <p class="lede">
+            Split drawings across printable sheets with trim lines and matching edge labels.
+          </p>
+        </div>
+        <div class="privacy">
+          <span class="privacy-dot"></span> Your files stay on this device.<small
+            >Files are processed locally in your browser.</small
+          >
+        </div>
+      </div>
+      <div class="workspace">
+        <form id="controls" class="settings" novalidate>
+          <section>
+            <div class="section-title">
+              <span class="step">01</span>
+              <h2>Your drawing</h2>
+              <span class="badge">ASCII DXF</span>
+            </div>
+            <label id="dropzone" class="dropzone" for="file"
+              ><span class="upload-icon">↥</span><strong>Choose DXF files</strong
+              ><span>or drop files here · up to 20 drawings</span
+              ><input id="file" type="file" accept=".dxf" multiple aria-label="Choose DXF files"
+            /></label>
+            <div class="file-row">
+              <span id="filename">No file selected</span
+              ><button id="demo" type="button" class="text-button">Try an example ↗</button>
+            </div>
+            <div id="parts-panel" hidden><div id="parts-list"></div></div>
+            <div id="nest-settings" hidden>
+              <div class="field">
+                <label for="part-gap">Part spacing (mm)</label
+                ><input id="part-gap" type="number" min="1" max="100" value="5" />
+              </div>
+              <label class="check"
+                ><input id="rotate-parts" type="checkbox" checked /><span
+                  >Allow 90° part rotation</span
+                ></label
+              >
+              <p id="nest-info" class="help"></p>
+            </div>
+            <div class="field" id="units-field">
+              <label for="units">Drawing units</label
+              ><select id="units">
+                <option value="mm">Millimeters (mm)</option>
+                <option value="in">Inches (in)</option>
+                <option value="cm">Centimeters (cm)</option>
+                <option value="ft">Feet (ft)</option>
+                <option value="m">Meters (m)</option>
+              </select>
+            </div>
+            <p id="units-note" class="help">Units will be read from the DXF when available.</p>
+            <details id="layers-panel" hidden>
+              <summary>Choose layers <span id="layer-count"></span></summary>
+              <div id="layers"></div>
+            </details>
+          </section>
+          <section>
+            <div class="section-title">
+              <span class="step">02</span>
+              <h2>Paper &amp; overlap</h2>
+              <span class="badge scale">1:1 SCALE</span>
+            </div>
+            <div class="two">
+              <div class="field">
+                <label for="paper">Paper size</label
+                ><select id="paper">
+                  <option value="letter">US Letter</option>
+                  <option value="a4">A4</option>
+                  <option value="a3">A3</option>
+                  <option value="legal">US Legal</option>
+                  <option value="tabloid">US Tabloid</option>
+                  <option value="custom">Custom</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="orientation">Orientation</label
+                ><select id="orientation">
+                  <option value="portrait">Portrait</option>
+                  <option value="landscape">Landscape</option>
+                </select>
+              </div>
+            </div>
+            <div id="custom-paper" class="two" hidden>
+              <div class="field">
+                <label for="paper-width">Short edge (mm)</label
+                ><input id="paper-width" type="number" min="75" max="2000" value="210" />
+              </div>
+              <div class="field">
+                <label for="paper-height">Long edge (mm)</label
+                ><input id="paper-height" type="number" min="75" max="2000" value="297" />
+              </div>
+            </div>
+            <div class="two">
+              <div class="field">
+                <label for="margin">Printer margin (mm)</label
+                ><input id="margin" type="number" value="10" min="0" max="50" step="1" />
+              </div>
+              <div class="field">
+                <label for="overlap">Sheet overlap (mm)</label
+                ><input id="overlap" type="number" value="10" min="4" max="50" step="1" />
+              </div>
+            </div>
+            <p class="help">
+              Use at least your printer’s minimum margin. An extra 8 mm gutter keeps labels and
+              scale bars inside the printable area.
+            </p>
+            <div class="field">
+              <label for="line-width">Template line width</label
+              ><select id="line-width">
+                <option value="0.15">Fine · 0.15 mm</option>
+                <option value="0.2" selected>Standard · 0.2 mm</option>
+                <option value="0.35">Bold · 0.35 mm</option>
+              </select>
+            </div>
+          </section>
+          <section>
+            <div class="section-title">
+              <span class="step">03</span>
+              <h2>Assembly guides</h2>
+            </div>
+            <div class="field">
+              <label for="labels">Sheet designators</label
+              ><select id="labels">
+                <option value="grid">Grid coordinates · A1, B1, A2…</option>
+                <option value="numbers">Page numbers · 1, 2, 3…</option>
+                <option value="none">No sheet designators</option>
+              </select>
+            </div>
+            <label class="check"
+              ><input id="edge-labels" type="checkbox" checked /><span
+                >Matching edge labels<small>Shared seam IDs + the neighboring sheet</small></span
+              ></label
+            >
+            <label class="check"
+              ><input id="cut-lines" type="checkbox" checked /><span
+                >Trim &amp; join lines</span
+              ></label
+            ><label class="check"
+              ><input id="registration" type="checkbox" checked /><span
+                >Alignment crosses</span
+              ></label
+            ><label class="check"
+              ><input id="skip-empty" type="checkbox" /><span
+                >Skip sheets with no drawing lines<small
+                  >Skipped positions stay visible on the assembly map</small
+                ></span
+              ></label
+            ><label class="check"
+              ><input id="overview" type="checkbox" checked /><span
+                >Include an assembly-map page<small
+                  >Reduced overview before the full-scale sheets</small
+                ></span
+              ></label
+            >
+          </section>
+          <section class="export">
+            <div id="warnings" class="warnings" hidden></div>
+            <label id="warning-confirm-row" class="check" hidden
+              ><input id="warning-confirm" type="checkbox" /><span
+                >I reviewed the import warnings and preview.</span
+              ></label
+            ><label class="check confirm"
+              ><input id="confirm" type="checkbox" /><span
+                >I checked the units and drawing dimensions.</span
+              ></label
+            ><button id="download" class="primary" type="submit" disabled>
+              Download tiled PDF <span>↓</span>
+            </button>
+            <p id="export-note" class="help">
+              Print at Actual size / 100%. Measure the 50 mm scale bar before cutting.
+            </p>
+            <div id="status" role="status" aria-live="polite"></div>
+          </section>
+        </form>
+        <section class="preview-panel" aria-labelledby="preview-title">
+          <div class="preview-toolbar">
+            <h2 id="preview-title">Layout preview</h2>
+            <div class="segmented" role="group" aria-label="Preview mode">
+              <button id="view-map" class="active" type="button" aria-pressed="true">
+                Assembly</button
+              ><button id="view-sheet" type="button" aria-pressed="false">Single sheet</button>
+            </div>
+          </div>
+          <div id="stats" class="stats">
+            <div><strong id="stat-size">—</strong><span>DRAWING SIZE</span></div>
+            <div><strong id="stat-sheets">—</strong><span>TEMPLATE SHEETS</span></div>
+            <div>
+              <strong>100<span>%</span></strong
+              ><span>PRINT SCALE</span>
+            </div>
+          </div>
+          <div class="canvas-wrap">
+            <div id="empty">
+              <div class="empty-art" aria-hidden="true">
+                <span>A1</span><span>B1</span><span>A2</span><span>B2</span>
+              </div>
+              <h3>Open a DXF to preview the print layout.</h3>
+              <p>Open a drawing to see its sheet layout,<br />or try the example to explore.</p>
+            </div>
+            <svg
+              id="preview"
+              xmlns="http://www.w3.org/2000/svg"
+              role="img"
+              aria-label="Drawing and printable sheet layout"
+              hidden
+            ></svg>
+          </div>
+          <div class="preview-footer">
+            <span><i class="legend-line"></i> Drawing</span
+            ><span><i class="legend-box"></i> Sheet boundary</span
+            ><span class="preview-hint">Select a sheet to inspect its edges</span>
+          </div>
+          <div id="sheet-details" class="sheet-details" hidden>
+            <div>
+              <p class="eyebrow">SELECTED SHEET</p>
+              <h3 id="selected-sheet"></h3>
+            </div>
+            <div class="sheet-picker">
+              <label for="sheet-select">Go to sheet</label
+              ><select id="sheet-select"></select>
+            </div>
+            <div id="neighbors" class="neighbors"></div>
+          </div>
+          <aside class="assembly-tip">
+            <span>↔</span>
+            <div>
+              <h3>Match shared edge labels</h3>
+              <p>
+                Match <code>A1:B1</code> on both sheets. Trim the
+                <strong>top and left</strong> shared edges on their dashed lines, align the matching
+                crosses, then tape. Keep all sheets upright.
+              </p>
+            </div>
+          </aside>
+        </section>
+      </div>
+      <footer>
+        <span>DXF Print <small>v0.1</small></span
+        ><span>Print templates at their original dimensions.</span
+        ><span>2D outlines · vector PDF · full scale</span>
+      </footer>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

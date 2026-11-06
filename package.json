@@ -1,0 +1,42 @@
+{
+  "name": "dxf-print",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "tsc --noEmit && vite build",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test tests/*.test.ts",
+    "test:watch": "node --import tsx --test --watch tests/*.test.ts",
+    "test:e2e": "playwright test",
+    "preview": "vite preview --host 127.0.0.1",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "dependencies": {
+    "dxf-parser": "^1.1.2",
+    "jspdf": "^4.0.0"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.14.0",
+    "@eslint/js": "10.0.1",
+    "@playwright/test": "^1.56.0",
+    "@types/node": "^22.0.0",
+    "eslint": "10.14.0",
+    "pdfjs-dist": "^6.2.108",
+    "prettier": "3.9.10",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "8.72.1",
+    "vite": "^7.2.0"
+  },
+  "overrides": {
+    "minimatch": "^11.0.1"
+  }
+}

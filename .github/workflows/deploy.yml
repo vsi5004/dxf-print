@@ -1,0 +1,49 @@
+name: Deploy to SiteGround
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: siteground-production
+  cancel-in-progress: false
+jobs:
+  deploy:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      vars.SITEGROUND_DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dxf-print-dist
+          path: dist
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+      - name: Install pinned host identity and deploy key
+        env:
+          DEPLOY_KEY: ${{ secrets.SITEGROUND_DEPLOY_KEY }}
+          KNOWN_HOSTS: ${{ secrets.SITEGROUND_KNOWN_HOSTS }}
+        run: |
+          test -n "$DEPLOY_KEY" && test -n "$KNOWN_HOSTS"
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/id_ed25519
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/id_ed25519 ~/.ssh/known_hosts
+      - name: Deploy tool directory only
+        env:
+          SITEGROUND_HOST: ${{ secrets.SITEGROUND_HOST }}
+          SITEGROUND_USER: ${{ secrets.SITEGROUND_USER }}
+        run: |
+          [[ "$SITEGROUND_HOST" =~ ^[a-zA-Z0-9.-]+$ ]]
+          [[ "$SITEGROUND_USER" =~ ^[a-zA-Z0-9_-]+$ ]]
+          ssh -p 18765 -o BatchMode=yes -o StrictHostKeyChecking=yes "$SITEGROUND_USER@$SITEGROUND_HOST" 'mkdir -p ~/www/ivansbuilds.com/public_html/tools/dxf-print'
+          rsync -rlz --delete --delay-updates -e 'ssh -p 18765 -o BatchMode=yes -o StrictHostKeyChecking=yes' dist/ "$SITEGROUND_USER@$SITEGROUND_HOST:www/ivansbuilds.com/public_html/tools/dxf-print/"
+      - name: Remove deploy credentials
+        if: always()
+        run: rm -f ~/.ssh/id_ed25519
