@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import { square } from '../helpers';
+import { square, rectangle } from '../helpers';
 test('example, reciprocal seam details, numeric IDs, and vector PDF download', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
@@ -24,6 +24,53 @@ test('example, reciprocal seam details, numeric IDs, and vector PDF download', a
   expect(download.suggestedFilename()).toBe('workshop-example-tiled.pdf');
   expect(await download.failure()).toBeNull();
   expect(errors).toEqual([]);
+});
+test('optimized mixed-size packing saves a sheet and rotation changes the actual print count', async ({
+  page,
+}) => {
+  await page.goto('/');
+  const mixedSizes = [
+    [189, 66],
+    [49, 40],
+    [51, 74],
+    [20, 109],
+    [114, 43],
+    [158, 49],
+    [127, 106],
+    [195, 107],
+    [82, 40],
+    [177, 119],
+    [63, 69],
+    [37, 57],
+  ];
+  await page.setInputFiles(
+    '#file',
+    mixedSizes.map(([w, h], index) => ({
+      name: `part-${index}.dxf`,
+      mimeType: 'application/dxf',
+      buffer: Buffer.from(rectangle(w, h)),
+    })),
+  );
+  await expect(page.locator('#stat-sheets')).toHaveText(/^3 \(/);
+  await expect(page.locator('#nest-info')).toContainText('1 fewer sheet');
+  await expect(page.locator('#preview')).toBeVisible();
+  await page.setInputFiles(
+    '#file',
+    [0, 1].map((index) => ({
+      name: `rotated-${index}.dxf`,
+      mimeType: 'application/dxf',
+      buffer: Buffer.from(rectangle(110, 160)),
+    })),
+  );
+  await expect(page.locator('#stat-sheets')).toHaveText(/^1 \(/);
+  await page.locator('#rotate-parts').uncheck();
+  await expect(page.locator('#stat-sheets')).toHaveText(/^2 \(/);
+  // Settings can change while a search is pending; only the newest result may be displayed.
+  await page.locator('#rotate-parts').check();
+  await page.locator('#rotate-parts').uncheck();
+  await page.locator('#rotate-parts').check();
+  await expect(page.locator('#stat-sheets')).toHaveText(/^1 \(/);
+  await expect(page.locator('#status')).toBeEmpty();
 });
 test('file import, invalid settings and scale confirmation', async ({ page }) => {
   await page.goto('/');

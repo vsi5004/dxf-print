@@ -56,7 +56,9 @@ Text, dimensions, hatches, splines, 3D geometry, binary DXF, array inserts, and 
 
 Limits: 10 MB per file, 20 MB per job, 20 files, 50,000 processed entities per file, 250,000 combined path commands, and 400 sheet positions. Parsing runs in a worker with a timeout. Nothing is persisted to local storage.
 
-Nesting compares several rectangle shelf arrangements using sheet count and occupied area. Rectangle separation prevents component overlap, but this heuristic does not promise a globally optimal nest and does not place parts inside another part's holes.
+Nesting searches page-sized canvases with MaxRects, comparing four part orders and three placement rules. Each part can independently rotate 90° when enabled. Results are ranked by actual printed sheet count, then occupied area; the previous shelf packer remains a candidate so the selected layout cannot use more sheets than that baseline. A synthetic 12-part regression fixture improves from four Letter sheets to three.
+
+Rectangle separation preserves the requested clearance. This heuristic does not promise a globally optimal nest and does not interlock irregular outlines or place parts inside another part's holes. The search runs in a cancellable worker with a 30-second timeout; changing settings discards obsolete results.
 
 ## Architecture and deployment
 

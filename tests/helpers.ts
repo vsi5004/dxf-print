@@ -27,7 +27,7 @@ export function fixture(
     '',
   ].join('\n');
 }
-export const square = (size = 100) =>
+export const rectangle = (width: number, height: number) =>
   fixture([
     '0',
     'LWPOLYLINE',
@@ -42,15 +42,16 @@ export const square = (size = 100) =>
     '20',
     0,
     '10',
-    size,
+    width,
     '20',
     0,
     '10',
-    size,
+    width,
     '20',
-    size,
+    height,
     '10',
     0,
     '20',
-    size,
+    height,
   ]);
+export const square = (size = 100) => rectangle(size, size);

@@ -8,13 +8,15 @@
 | `geometry.ts`                    | DOM-free affine transforms, cubic curves, bulge conversion, and derivative-based bounds                  |
 | `occupancy.ts`                   | Adaptive curve flattening and segment/rectangle intersection for blank-sheet detection                   |
 | `nesting.ts`                     | `NestingStrategy` contract and deterministic `RectangleNester`; no DOM or PDF dependencies               |
+| `maxrects-nester.ts`             | MaxRects canvas search, independent rotation, measured sheet scoring, and shelf fallback                 |
 | `layout.ts`                      | Millimeter page geometry, rows, stable sheet IDs, reciprocal seam relations, and skipped-sheet selection |
 | `pdf.ts`                         | Vector PDF rendering from an already computed layout                                                     |
 | `services/dxf-import-service.ts` | Owns worker lifecycle, timeouts, cancellation, and disposal                                              |
+| `services/nesting-service.ts`    | Cancellable nesting-worker lifecycle; typed request and response boundary                                |
 | `ui/application.ts`              | Owns application state and event subscriptions; composes services and renderer                           |
 | `ui/preview.ts`                  | SVG preview and sheet inspection using the same layout model as PDF                                      |
 
-Pure calculations remain functions. Classes represent owned state/lifecycle or interchangeable strategies; there is no inheritance hierarchy or shared global application state. The application accepts a nesting strategy through its constructor. `dispose()` releases worker and UI subscriptions.
+Pure calculations remain functions. Classes represent owned state/lifecycle or interchangeable strategies; there is no inheritance hierarchy or shared global application state. The application accepts a nesting service through its constructor. The worker composes `MaxRectsNester`, which accepts an interchangeable fallback strategy. `dispose()` releases workers and UI subscriptions. A revision counter prevents obsolete asynchronous results from replacing the latest layout.
 
 Coordinates remain in millimeters after each file's explicit unit conversion. CAD geometry uses a positive-up Y axis; preview and PDF apply the final Y inversion at their rendering boundaries. Nesting applies rigid 0°/90° transforms without rescaling parts.
 
@@ -24,6 +26,7 @@ Coordinates remain in millimeters after each file's explicit unit conversion. CA
 - Every retained seam points to a retained neighbor with the same seam ID in the opposite direction.
 - Shared seam midlines and crosses coincide in drawing space.
 - Nesting rectangles have at least the selected clearance and cannot overlap.
+- The selected nest uses no more actual printed sheets than the shelf baseline under the same settings, including empty-sheet skipping.
 - Empty-sheet skipping tests drawing strokes, not the bounds of an enclosed empty area; curve approximation includes a conservative tolerance.
 - Changing units, layers, spacing, or layout settings invalidates the user's dimension confirmation.
 - A failed import batch never replaces the last successfully imported job.
@@ -37,7 +40,7 @@ To add mixed rows, extend the layout planner with row overrides and compute each
 
 ## Verification
 
-Unit/integration tests check geometry, units, block bases, non-overlap, blank-sheet intersection, label reciprocity, physical PDF page sizes, and vector content. Browser tests cover actual worker import, download, nesting, unit controls, responsive layout, and axe WCAG AA checks. Synthetic fixtures are intentionally independent of private drawings.
+Unit/integration tests check geometry, units, block bases, non-overlap, rotation, sheet-count regression, blank-sheet intersection, label reciprocity, physical PDF page sizes, and vector content. Browser tests run the production build and cover actual worker import, download, nesting, rapid setting changes, unit controls, responsive layout, and axe WCAG AA checks. Build before running browser tests. Synthetic fixtures are intentionally independent of private drawings.
 
 PDF rendering and a physical printer calibration remain useful release checks. An automated accessibility scan does not replace keyboard and visual review.
 

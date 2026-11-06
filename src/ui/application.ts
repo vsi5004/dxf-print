@@ -4,7 +4,7 @@ import { DxfImportService } from '../services/dxf-import-service';
 import { inMillimeters, type Drawing, type Unit } from '../dxf';
 import { boundsOf, type Shape } from '../geometry';
 import { defaults, plan, type Layout, type Settings } from '../layout';
-import { RectangleNester, type NestingStrategy } from '../nesting';
+import { WorkerNestingService, type NestingService } from '../services/nesting-service';
 import { demoDxf } from '../demo';
 
 interface ImportedPart {
@@ -29,7 +29,9 @@ const paperSizes: Record<string, [number, number]> = {
 export class Application {
   private readonly preview = new PreviewRenderer();
   private readonly importer = new DxfImportService();
-  private readonly nester: NestingStrategy;
+  private readonly nester: NestingService;
+  private layoutRevision = 0;
+  private computing = false;
   private readonly events = new AbortController();
   private parts: ImportedPart[] = [];
   private shapes: Shape[] = [];
@@ -40,7 +42,7 @@ export class Application {
   private busy = false;
   private enabledLayers = new Set<string>();
 
-  public constructor(nester: NestingStrategy = new RectangleNester()) {
+  public constructor(nester: NestingService = new WorkerNestingService()) {
     this.nester = nester;
   }
   private get warnings(): string[] {
@@ -72,6 +74,7 @@ export class Application {
   private availability(): void {
     el<HTMLButtonElement>('download').disabled =
       this.busy ||
+      this.computing ||
       !this.layout ||
       !input('confirm').checked ||
       Boolean(this.warnings.length && !input('warning-confirm').checked);
@@ -83,10 +86,15 @@ export class Application {
     this.busy = value;
     el<HTMLButtonElement>('demo').disabled = value;
     input('file').disabled = value;
-    el('controls').setAttribute('aria-busy', String(value));
+    el('controls').setAttribute('aria-busy', String(value || this.computing));
     this.availability();
   }
-  private refresh(): void {
+  private async refresh(): Promise<void> {
+    const revision = ++this.layoutRevision;
+    this.nester.cancel();
+    this.computing = false;
+    input('confirm').disabled = false;
+    el('controls').setAttribute('aria-busy', String(this.busy));
     el('custom-paper').hidden = select('paper').value !== 'custom';
     if (!this.parts.length) {
       this.layout = null;
@@ -96,10 +104,17 @@ export class Application {
       el('sheet-details').hidden = true;
       el('stat-size').textContent = '—';
       el('stat-sheets').textContent = '—';
+      this.setStatus('');
       this.availability();
       return;
     }
     try {
+      this.computing = true;
+      this.layout = null;
+      input('confirm').disabled = true;
+      el('controls').setAttribute('aria-busy', 'true');
+      this.availability();
+      this.setStatus(this.parts.length > 1 ? 'Comparing part layouts…' : 'Preparing print layout…');
       const settings = this.readSettings();
       const parts = this.parts
         .map((part) => ({
@@ -123,12 +138,13 @@ export class Application {
         throw new Error(
           'Combined drawings exceed the vector complexity limit. Import fewer drawings.',
         );
-      const nested = this.nester.nest(
+      const nested = await this.nester.nest({
         parts,
         settings,
-        Number(input('part-gap').value),
-        input('rotate-parts').checked,
-      );
+        gap: Number(input('part-gap').value),
+        allowRotation: input('rotate-parts').checked,
+      });
+      if (revision !== this.layoutRevision) return;
       this.shapes = nested.shapes;
       const bounds = boundsOf(this.shapes);
       this.layout = plan(bounds, settings, this.shapes);
@@ -139,15 +155,21 @@ export class Application {
       el('stat-size').title = `${(width / 25.4).toFixed(3)} × ${(height / 25.4).toFixed(3)} inches`;
       el('stat-sheets').textContent =
         `${this.layout.tiles.length} (${this.layout.cols} × ${this.layout.rows})`;
+      const savedSheets = nested.report ? nested.report.baselineSheets - nested.report.sheets : 0;
+      const nestingSummary =
+        savedSheets > 0
+          ? `${savedSheets} fewer ${savedSheets === 1 ? 'sheet' : 'sheets'} than the previous packer.`
+          : 'Best layout found; minimum not guaranteed.';
       el('nest-info').textContent =
         parts.length > 1
-          ? `${parts.length} drawings · ${nested.placements.filter((p) => p.rotation === 90).length} rotated · ${input('part-gap').value} mm minimum spacing. Conservative rectangle nesting; not guaranteed optimal.`
+          ? `${parts.length} drawings · ${nested.placements.filter((p) => p.rotation === 90).length} rotated · ${input('part-gap').value} mm minimum spacing. ${nestingSummary}`
           : '';
       el('export-note').textContent =
         `PDF: ${this.layout.tiles.length + (settings.overview ? 1 : 0)} pages${settings.overview ? ' including assembly map' : ''}. ${this.layout.skipped.length} empty sheets skipped. Print at 100%; check the 50 mm bar.`;
       this.setStatus('');
       this.renderPreview();
     } catch (error) {
+      if (revision !== this.layoutRevision) return;
       this.layout = null;
       el('preview').toggleAttribute('hidden', true);
       el('empty').hidden = false;
@@ -155,8 +177,14 @@ export class Application {
       el('stat-size').textContent = '—';
       el('stat-sheets').textContent = '—';
       this.setStatus(error instanceof Error ? error.message : 'Unable to plan sheets.');
+    } finally {
+      if (revision === this.layoutRevision) {
+        this.computing = false;
+        input('confirm').disabled = false;
+        el('controls').setAttribute('aria-busy', String(this.busy));
+        this.availability();
+      }
     }
-    this.availability();
   }
   private renderPreview(): void {
     this.preview.render(this.layout, this.shapes, this.selected, this.view, (index) => {
@@ -267,6 +295,10 @@ export class Application {
   }
   private handleInput(event: Event): void {
     const target = event.target as HTMLInputElement;
+    if (['confirm', 'warning-confirm'].includes(target.id)) {
+      this.availability();
+      return;
+    }
     if (target.id === 'file') return;
     if (target.dataset.partUnit) {
       const part = this.parts.find((part) => part.id === target.dataset.partUnit);
@@ -379,7 +411,9 @@ export class Application {
     this.refresh();
   }
   public dispose(): void {
+    this.layoutRevision++;
     this.events.abort();
     this.importer.dispose();
+    this.nester.cancel();
   }
 }

@@ -2,7 +2,13 @@ import { boundsOf, transform, type Bounds, type Shape, type Matrix } from './geo
 import { plan, type Settings } from './layout';
 export type Part = { id: string; name: string; shapes: Shape[] };
 export type Placement = { partId: string; name: string; bounds: Bounds; rotation: 0 | 90 };
-export type NestedDrawing = { shapes: Shape[]; placements: Placement[] };
+export type NestingReport = {
+  algorithm: 'shelf' | 'maxrects';
+  baselineSheets: number;
+  sheets: number;
+  candidates: number;
+};
+export type NestedDrawing = { shapes: Shape[]; placements: Placement[]; report?: NestingReport };
 export interface NestingStrategy {
   nest(parts: Part[], settings: Settings, gap: number, allowRotation: boolean): NestedDrawing;
 }
