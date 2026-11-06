@@ -6,7 +6,7 @@ Target: `https://ivansbuilds.com/tools/dxf-print/`.
 
 The tool repository owns source, CI, production artifacts and automated build releases. A separate `Deploy DXF tool` workflow in the portfolio/hosting repository downloads the latest successful distribution, verifies its checksum, and syncs only the tool subdirectory using the existing SiteGround secrets. It does not build the portfolio or execute downloaded application code.
 
-The hosting workflow checks every 15 minutes and also supports manual dispatch. GitHub can delay scheduled runs. It compares the deployed `version.json` with the release commit and exits without deploying when unchanged.
+The hosting workflow checks every 15 minutes and also supports manual dispatch. GitHub can delay scheduled runs. It compares freshly requested version metadata with the release commit and exits without deploying when unchanged. Manual dispatch offers a force option for recovery. Hashed assets are retained across deployments, and recent releases are backfilled so cached pages can still load their original dynamic modules. Do not add `--delete` to the tool-hosting sync without a cache-aware asset retention policy.
 
 This arrangement keeps hosting credentials in their existing repository. No key needs to be copied to the public tool repository or recovered in plaintext. Build releases are published only from successful main-branch push CI runs, with source commit and SHA-256 checksum. Pull-request runs cannot publish distributions.
 

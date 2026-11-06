@@ -3,3 +3,9 @@
   Header set Referrer-Policy "strict-origin-when-cross-origin"
   Header set Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; frame-ancestors 'self'"
 </IfModule>
+<IfModule mod_headers.c>
+  <FilesMatch "^(index\.html|version\.json)$">
+    Header always set Cache-Control "no-cache, no-store, must-revalidate"
+    Header always set CDN-Cache-Control "no-store"
+  </FilesMatch>
+</IfModule>
