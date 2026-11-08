@@ -4,9 +4,11 @@ Target: `https://ivansbuilds.com/tools/dxf-print/`.
 
 ## Current hosting arrangement
 
-The tool repository owns source, CI, production artifacts and automated build releases. A separate `Deploy DXF tool` workflow in the portfolio/hosting repository downloads the latest successful distribution, verifies its checksum, and syncs only the tool subdirectory using the existing SiteGround secrets. It does not build the portfolio or execute downloaded application code.
+The tool repository owns source, CI, production artifacts and automated build releases. A separate `Deploy DXF tool` workflow in the portfolio/hosting repository downloads the explicitly selected tested distribution, verifies its checksum, and syncs only the tool subdirectory using the existing SiteGround secrets. It does not build the portfolio or execute downloaded application code.
 
-The hosting workflow checks every 15 minutes and also supports manual dispatch. GitHub can delay scheduled runs. It compares freshly requested version metadata with the release commit and exits without deploying when unchanged. Manual dispatch offers a force option for recovery. Hashed assets are retained across deployments, and recent releases are backfilled so cached pages can still load their original dynamic modules. Do not add `--delete` to the tool-hosting sync without a cache-aware asset retention policy.
+The hosting workflow has no schedule. After a tested build release is published, update `deployments/dxf-print.json` in [Portfolio-Site](https://github.com/vsi5004/Portfolio-Site) to the release's full source commit SHA and commit that change through a PR. Merging it to main triggers deployment. Changes to the hosting workflow or release-selection script also trigger a check; unrelated portfolio commits do not. Publishing a tool release alone does not promote it to production.
+
+The workflow compares freshly requested version metadata with that committed selection and exits without uploading when unchanged. Transient version-read failures are retried; persistent failures stop before SSH instead of triggering an unnecessary redeploy. Manual dispatch offers a force option for recovery, using the same committed selection. Hashed assets are retained across deployments, and recent releases are backfilled so cached pages can still load their original dynamic modules. Do not add `--delete` to the tool-hosting sync without a cache-aware asset retention policy.
 
 This arrangement keeps hosting credentials in their existing repository. No key needs to be copied to the public tool repository or recovered in plaintext. Build releases are published only from successful main-branch push CI runs, with source commit and SHA-256 checksum. Pull-request runs cannot publish distributions.
 
@@ -20,7 +22,7 @@ Both changes are in the portfolio integration pull request. The hosting workflow
 
 ## Alternative: direct deployment from this repository
 
-A direct SiteGround workflow is also provided but disabled by default. Use this option if hosting credentials are deliberately provisioned in this repository in the future. Disable the hosting-repository poller before switching so only one deployment path is active.
+A direct SiteGround workflow is also provided but disabled by default. Use this option if hosting credentials are deliberately provisioned in this repository in the future. Disable the hosting-repository deployment workflow before switching so only one deployment path is active.
 
 ## Repository setup
 
@@ -43,6 +45,6 @@ The included `.htaccess` applies a restrictive CSP and basic response headers wh
 
 ## First deploy and rollback
 
-After configuration, push a change to main to run CI and deploy. Confirm the live URL, file import, PDF download, and physical scale calibration. Retain previous build artifacts or tags before updating. To roll back, revert the source commit and let the same checks rebuild and deploy it.
+For the current hosting arrangement, push a source change to main to run CI and publish its tested release, then promote that source SHA with a commit to the portfolio's deployment reference. To roll back, commit a previously tested release SHA to that reference. The optional direct-deployment arrangement instead deploys after successful main-push CI once its credentials and enable flag are configured. Confirm the live URL, file import, PDF download, and physical scale calibration after a deployment.
 
 This tool should not be considered deployed merely because its CI artifact exists or its workflow is configured; verify a successful deployment run and the live URL.
